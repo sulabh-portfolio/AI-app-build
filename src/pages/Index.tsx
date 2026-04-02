@@ -4,6 +4,7 @@ import { DashboardView } from "@/components/DashboardView";
 import { DietView } from "@/components/DietView";
 import { WorkoutView } from "@/components/WorkoutView";
 import { GoalsView } from "@/components/GoalsView";
+import { Auth } from "@/components/Auth";
 import { useFoodEntries, useWorkoutEntries, useDailyGoals } from "@/lib/fitness-store";
 
 type Tab = "dashboard" | "diet" | "workout" | "goals";
@@ -17,6 +18,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-md px-4 pt-6 pb-24">
+        <Auth />
         {activeTab === "dashboard" && (
           <DashboardView
             foodEntries={food.todayEntries}

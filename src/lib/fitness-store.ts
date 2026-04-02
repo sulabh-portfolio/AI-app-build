@@ -1,4 +1,7 @@
 import { useState, useEffect } from "react";
+import { db, auth } from "./firebase";
+import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc, updateDoc, setDoc, getDoc } from "firebase/firestore";
+import { useAuthState } from "react-firebase-hooks/auth";
 
 export interface FoodEntry {
   id: string;
@@ -9,16 +12,18 @@ export interface FoodEntry {
   fat: number;
   meal: "breakfast" | "lunch" | "dinner" | "snack";
   date: string;
+  userId: string;
 }
 
 export interface WorkoutEntry {
   id: string;
   name: string;
   type: "strength" | "cardio" | "flexibility" | "hiit";
-  duration: number; // minutes
+  duration: number;
   caloriesBurned: number;
   date: string;
   completed: boolean;
+  userId: string;
 }
 
 export interface DailyGoals {
@@ -41,35 +46,36 @@ function getToday() {
   return new Date().toISOString().split("T")[0];
 }
 
-function loadFromStorage<T>(key: string, fallback: T): T {
-  try {
-    const stored = localStorage.getItem(key);
-    return stored ? JSON.parse(stored) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function saveToStorage<T>(key: string, value: T) {
-  localStorage.setItem(key, JSON.stringify(value));
-}
-
 export function useFoodEntries() {
-  const [entries, setEntries] = useState<FoodEntry[]>(() =>
-    loadFromStorage("fitness-food-entries", [])
-  );
+  const [user] = useAuthState(auth);
+  const [entries, setEntries] = useState<FoodEntry[]>([]);
 
-  useEffect(() => saveToStorage("fitness-food-entries", entries), [entries]);
+  useEffect(() => {
+    if (!user) {
+      setEntries([]);
+      return;
+    }
 
-  const addEntry = (entry: Omit<FoodEntry, "id" | "date">) => {
-    setEntries((prev) => [
-      ...prev,
-      { ...entry, id: crypto.randomUUID(), date: getToday() },
-    ]);
+    const q = query(collection(db, "food-entries"), where("userId", "==", user.uid));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const docs = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as FoodEntry));
+      setEntries(docs);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  const addEntry = async (entry: Omit<FoodEntry, "id" | "date" | "userId">) => {
+    if (!user) return;
+    await addDoc(collection(db, "food-entries"), {
+      ...entry,
+      date: getToday(),
+      userId: user.uid
+    });
   };
 
-  const removeEntry = (id: string) => {
-    setEntries((prev) => prev.filter((e) => e.id !== id));
+  const removeEntry = async (id: string) => {
+    await deleteDoc(doc(db, "food-entries", id));
   };
 
   const todayEntries = entries.filter((e) => e.date === getToday());
@@ -78,27 +84,44 @@ export function useFoodEntries() {
 }
 
 export function useWorkoutEntries() {
-  const [entries, setEntries] = useState<WorkoutEntry[]>(() =>
-    loadFromStorage("fitness-workout-entries", [])
-  );
+  const [user] = useAuthState(auth);
+  const [entries, setEntries] = useState<WorkoutEntry[]>([]);
 
-  useEffect(() => saveToStorage("fitness-workout-entries", entries), [entries]);
+  useEffect(() => {
+    if (!user) {
+      setEntries([]);
+      return;
+    }
 
-  const addEntry = (entry: Omit<WorkoutEntry, "id" | "date">) => {
-    setEntries((prev) => [
-      ...prev,
-      { ...entry, id: crypto.randomUUID(), date: getToday() },
-    ]);
+    const q = query(collection(db, "workout-entries"), where("userId", "==", user.uid));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const docs = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as WorkoutEntry));
+      setEntries(docs);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  const addEntry = async (entry: Omit<WorkoutEntry, "id" | "date" | "userId">) => {
+    if (!user) return;
+    await addDoc(collection(db, "workout-entries"), {
+      ...entry,
+      date: getToday(),
+      completed: false,
+      userId: user.uid
+    });
   };
 
-  const toggleComplete = (id: string) => {
-    setEntries((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, completed: !e.completed } : e))
-    );
+  const toggleComplete = async (id: string) => {
+    const entryRef = doc(db, "workout-entries", id);
+    const entry = entries.find(e => e.id === id);
+    if (entry) {
+      await updateDoc(entryRef, { completed: !entry.completed });
+    }
   };
 
-  const removeEntry = (id: string) => {
-    setEntries((prev) => prev.filter((e) => e.id !== id));
+  const removeEntry = async (id: string) => {
+    await deleteDoc(doc(db, "workout-entries", id));
   };
 
   const todayEntries = entries.filter((e) => e.date === getToday());
@@ -107,11 +130,31 @@ export function useWorkoutEntries() {
 }
 
 export function useDailyGoals() {
-  const [goals, setGoals] = useState<DailyGoals>(() =>
-    loadFromStorage("fitness-daily-goals", DEFAULT_GOALS)
-  );
+  const [user] = useAuthState(auth);
+  const [goals, setGoals] = useState<DailyGoals>(DEFAULT_GOALS);
 
-  useEffect(() => saveToStorage("fitness-daily-goals", goals), [goals]);
+  useEffect(() => {
+    if (!user) {
+      setGoals(DEFAULT_GOALS);
+      return;
+    }
 
-  return { goals, setGoals };
+    const goalRef = doc(db, "user-goals", user.uid);
+    const getGoals = async () => {
+      const snapshot = await getDoc(goalRef);
+      if (snapshot.exists()) {
+        setGoals(snapshot.data() as DailyGoals);
+      }
+    };
+    getGoals();
+  }, [user]);
+
+  const saveGoals = async (newGoals: DailyGoals) => {
+    if (!user) return;
+    const goalRef = doc(db, "user-goals", user.uid);
+    await setDoc(goalRef, newGoals);
+    setGoals(newGoals);
+  };
+
+  return { goals, setGoals: saveGoals };
 }
