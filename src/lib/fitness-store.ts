@@ -32,6 +32,8 @@ export interface DailyGoals {
   carbs: number;
   fat: number;
   workoutMinutes: number;
+  waterGlasses: number;
+  steps: number;
 }
 
 const DEFAULT_GOALS: DailyGoals = {
@@ -40,6 +42,8 @@ const DEFAULT_GOALS: DailyGoals = {
   carbs: 250,
   fat: 70,
   workoutMinutes: 45,
+  waterGlasses: 8,
+  steps: 10000,
 };
 
 function getToday() {
@@ -128,6 +132,32 @@ export function useWorkoutEntries() {
 
   return { entries, todayEntries, addEntry, toggleComplete, removeEntry };
 }
+
+export function useDailyStats() {
+    const [user] = useAuthState(auth);
+    const [stats, setStats] = useState({ water: 0, steps: 0 });
+  
+    useEffect(() => {
+      if (!user) return;
+      const docRef = doc(db, "daily-stats", `${user.uid}_${getToday()}`);
+      const unsubscribe = onSnapshot(docRef, (doc) => {
+        if (doc.exists()) {
+          setStats(doc.data() as { water: number; steps: number });
+        } else {
+          setStats({ water: 0, steps: 0 });
+        }
+      });
+      return () => unsubscribe();
+    }, [user]);
+  
+    const updateStats = async (newStats: Partial<{ water: number; steps: number }>) => {
+      if (!user) return;
+      const docRef = doc(db, "daily-stats", `${user.uid}_${getToday()}`);
+      await setDoc(docRef, { ...stats, ...newStats }, { merge: true });
+    };
+  
+    return { ...stats, updateStats };
+  }
 
 export function useDailyGoals() {
   const [user] = useAuthState(auth);

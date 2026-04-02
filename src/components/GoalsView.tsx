@@ -24,6 +24,8 @@ export function GoalsView({ goals, onSave }: GoalsViewProps) {
     { key: "carbs", label: "Carbohydrates", unit: "g" },
     { key: "fat", label: "Fat", unit: "g" },
     { key: "workoutMinutes", label: "Workout Duration", unit: "min" },
+    { key: "waterGlasses", label: "Water Intake", unit: "glasses" },
+    { key: "steps", label: "Daily Steps", unit: "steps" },
   ];
 
   return (

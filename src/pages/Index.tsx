@@ -5,7 +5,7 @@ import { DietView } from "@/components/DietView";
 import { WorkoutView } from "@/components/WorkoutView";
 import { GoalsView } from "@/components/GoalsView";
 import { Auth } from "@/components/Auth";
-import { useFoodEntries, useWorkoutEntries, useDailyGoals } from "@/lib/fitness-store";
+import { useFoodEntries, useWorkoutEntries, useDailyGoals, useDailyStats } from "@/lib/fitness-store";
 
 type Tab = "dashboard" | "diet" | "workout" | "goals";
 
@@ -14,6 +14,7 @@ const Index = () => {
   const food = useFoodEntries();
   const workout = useWorkoutEntries();
   const { goals, setGoals } = useDailyGoals();
+  const stats = useDailyStats();
 
   return (
     <div className="min-h-screen bg-background">
@@ -24,6 +25,7 @@ const Index = () => {
             foodEntries={food.entries}
             workoutEntries={workout.entries}
             goals={goals}
+            stats={stats}
           />
         )}
         {activeTab === "diet" && (
@@ -41,7 +43,7 @@ const Index = () => {
             onRemove={workout.removeEntry}
           />
         )}
-        {activeTab === "goals" && (
+        {activeTab === "goals" && goals && (
           <GoalsView goals={goals} onSave={setGoals} />
         )}
       </div>
