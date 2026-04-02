@@ -21,8 +21,8 @@ const Index = () => {
         <Auth />
         {activeTab === "dashboard" && (
           <DashboardView
-            foodEntries={food.todayEntries}
-            workoutEntries={workout.todayEntries}
+            foodEntries={food.entries}
+            workoutEntries={workout.entries}
             goals={goals}
           />
         )}

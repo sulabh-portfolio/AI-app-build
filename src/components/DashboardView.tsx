@@ -1,6 +1,7 @@
-import { Flame, Drumstick, Wheat, Droplets, Timer } from "lucide-react";
+import { Flame, Drumstick, Wheat, Droplets, Timer, History } from "lucide-react";
 import { StatCard } from "./StatCard";
 import type { FoodEntry, WorkoutEntry, DailyGoals } from "@/lib/fitness-store";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 
 interface DashboardViewProps {
   foodEntries: FoodEntry[];
@@ -9,7 +10,14 @@ interface DashboardViewProps {
 }
 
 export function DashboardView({ foodEntries, workoutEntries, goals }: DashboardViewProps) {
-  const totals = foodEntries.reduce(
+  function getToday() {
+    return new Date().toISOString().split("T")[0];
+  }
+
+  const todayFood = foodEntries.filter(e => e.date === getToday());
+  const todayWorkouts = workoutEntries.filter(e => e.date === getToday());
+
+  const totals = todayFood.reduce(
     (acc, e) => ({
       calories: acc.calories + e.calories,
       protein: acc.protein + e.protein,
@@ -19,13 +27,27 @@ export function DashboardView({ foodEntries, workoutEntries, goals }: DashboardV
     { calories: 0, protein: 0, carbs: 0, fat: 0 }
   );
 
-  const workoutMinutes = workoutEntries.reduce((acc, e) => acc + e.duration, 0);
-  const caloriesBurned = workoutEntries.reduce((acc, e) => acc + e.caloriesBurned, 0);
+  const workoutMinutes = todayWorkouts.reduce((acc, e) => acc + e.duration, 0);
+  const caloriesBurned = todayWorkouts.reduce((acc, e) => acc + e.caloriesBurned, 0);
+
+  // Generate 7-day data
+  const last7Days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    const dateStr = d.toISOString().split('T')[0];
+    const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+    
+    const dayCalories = foodEntries
+      .filter(e => e.date === dateStr)
+      .reduce((sum, e) => sum + e.calories, 0);
+
+    return { name: dayName, calories: dayCalories };
+  });
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold font-display">Today's Progress</h1>
+        <h1 className="text-2xl font-bold font-display">Daily Overview</h1>
         <p className="text-muted-foreground text-sm mt-1">
           {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
         </p>
@@ -47,6 +69,44 @@ export function DashboardView({ foodEntries, workoutEntries, goals }: DashboardV
             🔥 {caloriesBurned} kcal burned from workouts
           </p>
         )}
+      </div>
+
+      {/* 7-Day Chart */}
+      <div className="glass-card p-4 space-y-4">
+        <div className="flex items-center gap-2 mb-2">
+            <History className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-semibold uppercase tracking-wider">Weekly Progress</h2>
+        </div>
+        <div className="h-[180px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={last7Days}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                <XAxis 
+                    dataKey="name" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{fill: 'rgba(255,255,255,0.5)', fontSize: 10}}
+                />
+                <Tooltip 
+                    cursor={{fill: 'rgba(255,255,255,0.05)'}}
+                    contentStyle={{backgroundColor: '#1A1C1E', borderRadius: '8px', border: 'none', color: '#fff'}}
+                />
+                <ReferenceLine y={goals.calories} stroke="#8B5CF6" strokeDasharray="3 3" />
+                <Bar 
+                    dataKey="calories" 
+                    fill="url(#colorCal)" 
+                    radius={[4, 4, 0, 0]} 
+                />
+                <defs>
+                <linearGradient id="colorCal" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#D946EF" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0.8}/>
+                </linearGradient>
+                </defs>
+            </BarChart>
+            </ResponsiveContainer>
+        </div>
+        <p className="text-[10px] text-center text-muted-foreground">The dashed line represents your daily calorie goal.</p>
       </div>
 
       {/* Macro grid */}
@@ -85,11 +145,11 @@ export function DashboardView({ foodEntries, workoutEntries, goals }: DashboardV
       </div>
 
       {/* Recent meals */}
-      {foodEntries.length > 0 && (
+      {todayFood.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold font-display mb-3">Recent Meals</h2>
+          <h2 className="text-lg font-semibold font-display mb-3">Today's Meals</h2>
           <div className="space-y-2">
-            {foodEntries.slice(-3).reverse().map((entry) => (
+            {todayFood.slice(-3).reverse().map((entry) => (
               <div key={entry.id} className="glass-card p-3 flex items-center justify-between">
                 <div>
                   <p className="font-medium text-sm">{entry.name}</p>
