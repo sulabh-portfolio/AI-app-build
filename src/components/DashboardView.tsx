@@ -1,5 +1,6 @@
-import { Flame, Drumstick, Wheat, Droplets, Timer, History } from "lucide-react";
+import { Flame, Drumstick, Wheat, Droplets, Timer, History, MessageCircle, Share2 } from "lucide-react";
 import { StatCard } from "./StatCard";
+import { Button } from "./ui/button";
 import type { FoodEntry, WorkoutEntry, DailyGoals } from "@/lib/fitness-store";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 
@@ -44,14 +45,43 @@ export function DashboardView({ foodEntries, workoutEntries, goals }: DashboardV
     return { name: dayName, calories: dayCalories };
   });
 
+  const handleWhatsAppShare = () => {
+    const contact = import.meta.env.VITE_WHATSAPP_CONTACT || "";
+    const message = `*My Daily Wellness Summary* 🥗💪
+    
+🔥 *Calories:* ${totals.calories} / ${goals.calories} kcal
+🍗 *Protein:* ${totals.protein}g / ${goals.protein}g
+⏳ *Workout:* ${workoutMinutes} / ${goals.workoutMinutes} min
+
+Status: ${totals.calories >= goals.calories ? "✅ Goal reached!" : "⏰ Still working on it!"}
+
+_Sent from Daily Wellness Hub_`;
+
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/${contact.replace("+", "")}?text=${encodedMessage}`;
+    window.open(whatsappUrl, "_blank");
+  };
+
   return (
     <div className="space-y-6">
-      <div>
+      <div className="flex items-center justify-between">
+        <div>
         <h1 className="text-2xl font-bold font-display">Daily Overview</h1>
         <p className="text-muted-foreground text-sm mt-1">
           {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
         </p>
       </div>
+      <Button 
+        variant="ghost" 
+        size="sm" 
+        onClick={handleWhatsAppShare}
+        className="text-[#25D366] hover:bg-[#25D366]/10 hover:text-[#25D366]"
+      >
+        <MessageCircle className="h-4 w-4 mr-2" />
+        Share to WhatsApp
+        <Share2 className="h-3 w-3 ml-2 opacity-50" />
+      </Button>
+    </div>
 
       {/* Main calorie card */}
       <div className="glass-card p-6 glow-primary border-primary/20 text-center">
