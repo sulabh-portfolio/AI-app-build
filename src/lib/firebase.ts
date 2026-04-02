@@ -4,13 +4,13 @@ import { getFirestore } from "firebase/firestore";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyCXEjxffKzWVDWrbQi8CfSmr9TZC7uwE_k",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "daily-wellness-hub.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "daily-wellness-hub",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "daily-wellness-hub.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "721493695935",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:721493695935:web:78c3f5e01d7f1bb0d2150a",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-M1XLS20TC4"
 };
 
 // Initialize Firebase
